@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import Navbar from '../componants/Navbar'
 import { useNavigate } from 'react-router-dom'
 import TaskList from '../componants/TaskList'
+import TaskForm from '../componants/TaskForm'
 
 
 
@@ -36,8 +37,10 @@ const Dashbord = () => {
       <h1>Welcome to Dashboard</h1>
       <h1>My Task</h1>
       <TaskList tasks={tasks}/>
+      <TaskForm />
       </div>
   )
+  
 }
 
 export default Dashbord
