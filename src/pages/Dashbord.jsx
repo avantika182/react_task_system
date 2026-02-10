@@ -1,46 +1,127 @@
-import React, { useEffect, useState } from 'react'
-import Navbar from '../componants/Navbar'
-import { useNavigate } from 'react-router-dom'
-import TaskList from '../componants/TaskList'
-import TaskForm from '../componants/TaskForm'
-
-
+import React, { useEffect, useState } from "react";
+import Navbar from "../componants/Navbar";
+import { useNavigate } from "react-router-dom";
+import TaskList from "../componants/TaskList";
+import TaskForm from "../componants/TaskForm";
 
 const Dashbord = () => {
+  const navigate = useNavigate();
+  const [tasks, setTasks] = useState([]);
+  const [editTask, setEditTask] = useState();
+  const [showForm, setShowForm] = useState(false);
 
-  const navigate = useNavigate()
-  const [tasks,setTasks] = useState([])
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-  
-  const fetchData= async()=>{
-    try{
+  const fetchData = async () => {
+    try {
       const response = await fetch("http://localhost:3000/tasks");
       const data = await response.json();
       setTasks(data);
-    }catch(error){
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    console.log("called after API", tasks);
+  }, [tasks]);
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleLogout = () => {
+    // console.log('click from dashbord')
+    localStorage.removeItem("loginData");
+    localStorage.removeItem("authData");
+    // localStorage.clear()
+    navigate("/login");
+  };
+
+  const handleaddTask = async(newTask) =>{
+    const tasktoAdd = {...newTask, completed: false}
+    try {
+      const response = await fetch("http://localhost:3000/tasks",{
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify(tasktoAdd)
+      });
+      console.log(tasktoAdd)
+      const data = await response.json();
+      setTasks([...tasks, data])
+    } catch (error) {
       console.log(error)
     }
-  };     
-  useEffect(()=>{  
-    fetchData();
-  },[])
-  
-  const handleLogout = () =>{
-    localStorage.removeItem('loginData')
-    localStorage.removeItem('authData')
-    navigate('/login')
+  };
+
+  const handleDeleteTask = async(id) =>{
+    try {
+      await fetch(`http://localhost:3000/tasks/${id}`,{
+        method: "DELETE"
+      })
+      setTasks(tasks.filter((tasks) => tasks.id !==id))
+    } catch(error) {
+      console.log(error)
+    }
   }
+
+  const handleUpdateTask = async(updateTask) =>{
+    try{
+      await fetch(`http://localhost:3000/tasks/${updateTask.id}`,{
+        method: "PUT",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify(updateTask)
+      })
+      setTasks(tasks.map((tasks)=>(tasks.id === updateTask.id ? {...updateTask} : tasks)))
+    } catch (error){
+      console.log(error);
+    }
+  };
+
+  const handleCompleteTask = async(id) =>{
+    const taskToggle = tasks.find((t)=> t.id === id);
+    const updateTask = {... taskToggle, completed: !taskToggle.completed};
+    try {
+      await fetch(`http://localhost:3000/tasks/${id}`,{
+        method: "PUT",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify(updateTask),
+      })
+      setTasks(tasks.map((tasks)=>(tasks.id === id ? updateTask : tasks)))
+    } catch(error) {
+      console.log(error)
+    }
+  };
+
+  const editingTask = (editingTask) =>{
+    console.log(editTask);
+    setEditTask(editingTask);
+  };
+
   return (
     <div>
-      <Navbar title="Task Management" onLogout={handleLogout}/>
+      <Navbar title="Task Management"
+              isFormOpen={showForm}
+              onAddtaskBtnClick={() => setShowForm(!showForm)}
+              onLogout={handleLogout} 
+      />
+      {
+        showForm && (<TaskForm 
+                          addTask={handleaddTask} 
+                          updateTask={handleUpdateTask} 
+                          editingTask={editTask}
+                      />)
+      }
+      
+      <h1>MY TASKS</h1>
+      <TaskList 
+            tasks={tasks} 
+            editingTask={editingTask} 
+            deletingTask={handleDeleteTask} 
+            handleCompleteTask={handleCompleteTask}/>
+    </div>
+  );
+};
 
-      <h1>Welcome to Dashboard</h1>
-      <h1>My Task</h1>
-      <TaskList tasks={tasks}/>
-      <TaskForm />
-      </div>
-  )
-  
-}
-
-export default Dashbord
+export default Dashbord;
